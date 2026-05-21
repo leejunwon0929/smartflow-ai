@@ -8,7 +8,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Streamlit 기본 UI 숨기기 + 탭 스타일링 ──
 st.markdown("""
 <style>
 #MainMenu, footer, header { visibility: hidden; }
@@ -37,14 +36,14 @@ div[data-testid="stTabContent"] { padding: 0 !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# ── HTML 파일 읽기 ──
-NEWS_PATH = pathlib.Path("news.html")
-SIM_PATH  = pathlib.Path("index.html")
+# app.py 위치 기준으로 HTML 파일 경로 설정 (Streamlit Cloud 경로 문제 방지)
+BASE      = pathlib.Path(__file__).parent
+NEWS_PATH = BASE / "news.html"
+SIM_PATH  = BASE / "index.html"
 
 news_html = NEWS_PATH.read_text(encoding="utf-8")
 sim_html  = SIM_PATH.read_text(encoding="utf-8")
 
-# 뉴스 페이지의 "시뮬레이터 실행하기" 버튼 → 탭 안내 문구로 변경
 news_html = news_html.replace(
     '<a class="demo-btn" href="index.html" target="_blank">▶ 시뮬레이터 실행하기</a>',
     '<span style="display:inline-block;padding:10px 28px;'
@@ -53,7 +52,6 @@ news_html = news_html.replace(
     '🚦 상단 \'AI 시뮬레이터\' 탭을 클릭하세요</span>'
 )
 
-# ── 탭 구성 ──
 tab1, tab2 = st.tabs(["📰  뉴스 기사", "🚦  AI 시뮬레이터"])
 
 with tab1:
