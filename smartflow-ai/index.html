@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartFlow AI | 지능형 도시 교통 관리 시스템</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg0: #060a14;
+  --bg1: #0b1120;
+  --bg2: #111827;
+  --card: rgba(255,255,255,0.04);
+  --cyan: #00e5ff;
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
+  --green: #00e676;
+  --amber: #ffab00;
+  --red: #ff1744;
+  --border: rgba(0,229,255,0.15);
+  --txt: #e2e8f0;
+  --txt2: #64748b;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{
+  font-family:'Outfit',sans-serif;
+  background:var(--bg0);
+  color:var(--txt);
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+}
+
+/* === HEADER === */
+.hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 20px;
+  background:rgba(0,229,255,0.04);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  z-index:10;
+}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{
+  width:34px;height:34px;
+  background:linear-gradient(135deg,#00e5ff,#3b82f6);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:17px;
+}
+.logo h1{
+  font-size:1.1rem;font-weight:800;
+  background:linear-gradient(90deg,#00e5ff,#7c3aed);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.logo p{font-size:0.6rem;color:var(--txt2);margin-top:1px;}
+.hdr-mid{display:flex;align-items:center;gap:16px;}
+.live-badge{
+  display:flex;align-items:center;gap:5px;
+  padding:3px 10px;background:rgba(0,230,118,0.1);
+  border:1px solid rgba(0,230,118,0.3);border-radius:20px;
+  font-size:0.68rem;color:var(--green);
+}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(1.4);}}
+.sim-clock{font-family:'JetBrains Mono',monospace;font-size:1rem;color:var(--cyan);}
+.mode-badge{
+  padding:3px 12px;border-radius:20px;font-size:0.7rem;font-weight:600;
+  transition:all 0.3s;
+}
+.mode-badge.normal{background:rgba(100,116,139,0.12);border:1px solid rgba(100,116,139,0.25);color:var(--txt2);}
+.mode-badge.ai{background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.4);color:var(--cyan);}
+.hdr-right{font-size:0.68rem;color:var(--txt2);}
+
+/* === LAYOUT === */
+.main{display:flex;flex:1;overflow:hidden;}
+
+/* === PANELS === */
+.panel{
+  background:var(--bg1);
+  display:flex;flex-direction:column;
+  overflow-y:auto;overflow-x:hidden;
+  padding:12px;gap:10px;
+  flex-shrink:0;
+}
+.panel-l{width:230px;border-right:1px solid var(--border);}
+.panel-r{width:250px;border-left:1px solid var(--border);}
+.center{flex:1;display:flex;align-items:center;justify-content:center;position:relative;background:var(--bg0);}
+
+/* === CANVAS === */
+#cityCanvas{
+  border:1px solid var(--border);
+  border-radius:8px;
+  box-shadow:0 0 40px rgba(0,229,255,0.06),0 0 80px rgba(59,130,246,0.04);
+  display:block;
+}
+
+/* === CARDS === */
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:11px;
+}
+.card-title{
+  font-size:0.6rem;font-weight:700;
+  color:var(--txt2);text-transform:uppercase;letter-spacing:0.1em;
+  margin-bottom:9px;
+}
+
+/* === STAT GRID === */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.stat-box{
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:8px;padding:9px 7px;text-align:center;
+}
+.stat-val{
+  font-family:'JetBrains Mono',monospace;
+  font-size:1.25rem;font-weight:700;line-height:1;margin-bottom:3px;
+}
+.stat-lbl{font-size:0.58rem;color:var(--txt2);}
+.c-cyan .stat-val{color:var(--cyan);}
+.c-green .stat-val{color:var(--green);}
+.c-amber .stat-val{color:var(--amber);}
+.c-purple .stat-val{color:var(--purple);}
+.c-red .stat-val{color:var(--red);}
+
+/* === PROGRESS === */
+.prog-row{margin-top:7px;}
+.prog-hdr{display:flex;justify-content:space-between;font-size:0.62rem;color:var(--txt2);margin-bottom:3px;}
+.prog-track{height:4px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;transition:width 0.6s ease;}
+.pf-cyan{background:var(--cyan);}
+.pf-green{background:var(--green);}
+.pf-amber{background:var(--amber);}
+.pf-red{background:var(--red);}
+
+/* === BUTTONS === */
+.btn{
+  width:100%;padding:8px 10px;border:none;border-radius:7px;
+  font-family:'Outfit',sans-serif;font-size:0.75rem;font-weight:600;
+  cursor:pointer;transition:all 0.18s;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.15);}
+.btn:active{transform:translateY(0);}
+.btn-primary{background:linear-gradient(135deg,#00e5ff,#3b82f6);color:#000;}
+.btn-warn{background:rgba(255,171,0,0.12);color:var(--amber);border:1px solid rgba(255,171,0,0.28);}
+.btn-danger{background:rgba(255,23,68,0.12);color:var(--red);border:1px solid rgba(255,23,68,0.28);}
+.btn-success{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.28);}
+.btn-toggle{background:rgba(255,255,255,0.04);color:var(--txt2);border:1px solid rgba(255,255,255,0.08);}
+.btn-toggle.on{background:rgba(0,229,255,0.12);color:var(--cyan);border-color:rgba(0,229,255,0.4);}
+.btn-group{display:flex;flex-direction:column;gap:6px;}
+
+/* === LEGEND === */
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px;}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--txt2);}
+.leg-dot{width:8px;height:8px;border-radius:2px;}
+
+/* === EVENT LOG === */
+.event-log{
+  height:95px;flex-shrink:0;
+  background:var(--bg1);border-top:1px solid var(--border);
+  padding:6px 16px;overflow-y:auto;
+}
+.log-title{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--txt2);margin-bottom:4px;}
+.log-item{display:flex;align-items:center;gap:8px;font-size:0.68rem;animation:fadeIn 0.3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:translateX(0);}}
+.log-time{font-family:'JetBrains Mono',monospace;font-size:0.58rem;color:var(--txt2);min-width:42px;}
+.log-icon{font-size:0.8rem;}
+
+/* === CHARTS === */
+canvas.chart{display:block;width:100%;border-radius:5px;}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px;}
+
+/* === EVENT CARDS === */
+.ev-card{
+  padding:6px 8px;border-radius:5px;font-size:0.65rem;
+  border-left:2px solid;margin-bottom:5px;
+  background:rgba(255,255,255,0.02);
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="logo">
+    <div class="logo-icon">🚦</div>
+    <div>
+      <h1>SmartFlow AI</h1>
+      <p>지능형 도시 교통 관리 플랫폼 · Seoul Metro</p>
+    </div>
+  </div>
+  <div class="hdr-mid">
+    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+    <div class="sim-clock" id="simClock">00:00</div>
+    <div class="mode-badge normal" id="modeBadge">⚙ 일반 모드</div>
+  </div>
+  <div class="hdr-right">📅 2026.05.21 &nbsp;|&nbsp; 교통 관제 센터</div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT PANEL -->
+  <div class="panel panel-l">
+
+    <div class="card">
+      <div class="card-title">실시간 통계</div>
+      <div class="stat-grid">
+        <div class="stat-box c-cyan"><div class="stat-val" id="sEfficiency">—</div><div class="stat-lbl">교통 효율 %</div></div>
+        <div class="stat-box c-amber"><div class="stat-val" id="sWait">—</div><div class="stat-lbl">평균 대기 (초)</div></div>
+        <div class="stat-box c-green"><div class="stat-val" id="sCars">—</div><div class="stat-lbl">활성 차량</div></div>
+        <div class="stat-box c-purple"><div class="stat-val" id="sIncidents">0</div><div class="stat-lbl">처리 사고</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">구역별 혼잡도</div>
+      <div class="prog-row"><div class="prog-hdr"><span>🔵 북부</span><span id="z0pct">—</span></div><div class="prog-track"><div class="prog-fill pf-cyan" id="z0bar" style="width:0%"></div></div></div>
+      <div class="prog-row"><div class="prog-hdr"><span>🟡 중북부</span><span id="z1pct">—</span></div><div class="prog-track"><div class="prog-fill pf-amber" id="z1bar" style="width:0%"></div></div></div>
+      <div class="prog-row"><div class="prog-hdr"><span>🟠 중남부</span><span id="z2pct">—</span></div><div class="prog-track"><div class="prog-fill pf-amber" id="z2bar" style="width:0%"></div></div></div>
+      <div class="prog-row"><div class="prog-hdr"><span>🔴 남부</span><span id="z3pct">—</span></div><div class="prog-track"><div class="prog-fill pf-red" id="z3bar" style="width:0%"></div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">AI 절감 효과</div>
+      <div class="stat-box c-green" style="margin-bottom:7px;"><div class="stat-val" id="sSaving">—</div><div class="stat-lbl">대기 시간 절감 %</div></div>
+      <div class="prog-row"><div class="prog-hdr"><span>CO₂ 절감</span><span id="sCO2">0g</span></div><div class="prog-track"><div class="prog-fill pf-green" id="co2bar" style="width:0%"></div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">제어 패널</div>
+      <div class="btn-group">
+        <button class="btn btn-toggle" id="aiBtn" onclick="toggleAI()">🤖 AI 모드 켜기</button>
+        <button class="btn btn-warn" onclick="doAccident()">⚠️ 사고 발생 시뮬레이션</button>
+        <button class="btn btn-danger" onclick="doEmergency()">🚑 응급차 출동</button>
+        <button class="btn btn-success" onclick="doRush()">🚗 출퇴근 혼잡 시뮬레이션</button>
+        <button class="btn btn-primary" onclick="doReset()">🔄 초기화</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">범례</div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#00e676"></div>원활</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#ffab00"></div>보통</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#ff5722"></div>혼잡</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#ff1744"></div>매우혼잡</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#00e5ff"></div>일반차량</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#ff1744;border-radius:50%"></div>응급차</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CENTER -->
+  <div class="center">
+    <canvas id="cityCanvas"></canvas>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel panel-r">
+
+    <div class="card">
+      <div class="card-title">교통 흐름 추이 (실시간)</div>
+      <canvas class="chart" id="flowChart" height="110"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="card-title">신호 분배 현황</div>
+      <canvas class="chart" id="signalChart" height="95"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="card-title">시간대별 혼잡 예측</div>
+      <canvas class="chart" id="predChart" height="95"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="card-title">최근 이벤트</div>
+      <div id="evCards"><div style="font-size:0.65rem;color:var(--txt2);text-align:center;padding:8px 0;">이벤트 없음</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EVENT LOG -->
+<div class="event-log">
+  <div class="log-title">📋 시스템 이벤트 로그</div>
+  <div id="logContainer"></div>
+</div>
+
+<script>
+// ========================================================
+//  SmartFlow AI — Traffic Simulation Engine
+// ========================================================
+
+const C = {
+  COLS:5, ROWS:4,
+  CW:700, CH:510,
+  PX:85, PY:72,
+  MAX_CARS:50,
+  CAR_SPD:0.16,
+  NORMAL_PHASE:8,
+  AI_MIN:2.5, AI_MAX:14,
+  ROAD_W:20,
+  SPAWN_INT:1.3,
+};
+C.SX = (C.CW - 2*C.PX) / (C.COLS-1);
+C.SY = (C.CH - 2*C.PY) / (C.ROWS-1);
+
+// Pre-computed building layout
+const BUILDINGS = [];
+
+function prebuildCityLayout() {
+  BUILDINGS.length = 0;
+  const rng = mulberry32(42);
+  for (let r=0; r<C.ROWS-1; r++) {
+    for (let c=0; c<C.COLS-1; c++) {
+      const tx = C.PX + c*C.SX;
+      const ty = C.PY + r*C.SY;
+      const bx = C.PX + (c+1)*C.SX;
+      const by = C.PY + (r+1)*C.SY;
+      const mg = C.ROAD_W/2 + 5;
+      const blkX = tx+mg, blkY = ty+mg;
+      const blkW = bx-tx-2*mg, blkH = by-ty-2*mg;
+      if (blkW<10 || blkH<10) continue;
+      const numB = 2 + Math.floor(rng()*3);
+      const bw = (blkW-4) / numB;
+      const block = { blkX,blkY,blkW,blkH, buildings:[] };
+      for (let b=0; b<numB; b++) {
+        const bHeight = blkH*(0.35 + rng()*0.55);
+        const bx2 = blkX + 2 + b*bw;
+        const by2 = blkY + blkH - bHeight;
+        const bw2 = bw - 4;
+        const windows = [];
+        for (let wy=by2+4; wy<blkY+blkH-4; wy+=8) {
+          for (let wx=bx2+3; wx<bx2+bw2-2; wx+=7) {
+            if (rng() < 0.65) windows.push({wx,wy});
+          }
+        }
+        block.buildings.push({bx:bx2,by:by2,bw:bw2,bh:bHeight,windows});
+      }
+      BUILDINGS.push(block);
+    }
+  }
+}
+
+function mulberry32(a) {
+  return function() {
+    a|=0; a=a+0x6D2B79F5|0;
+    var t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296;
+  };
+}
+
+// ---- STATE ----
+let S = {};
+
+function initSim() {
+  prebuildCityLayout();
+  S = {
+    nodes:[], edges:[], eidx:{}, adj:{},
+    cars:[], nextId:0,
+    ai:false,
+    t:0, spawnT:0,
+    incidents:0,
+    emergencyCarId:null,
+    rushMode:false, rushT:0,
+    lastFrame:null,
+    history:Array(80).fill(0), histT:0,
+    co2:0,
+    normalWait:0, aiWait:0,
+    events:[],
+    totalWaiting:0,
+  };
+
+  // Nodes
+  for (let r=0; r<C.ROWS; r++) {
+    for (let c=0; c<C.COLS; c++) {
+      S.nodes.push({
+        id:r*C.COLS+c, col:c, row:r,
+        x:C.PX+c*C.SX, y:C.PY+r*C.SY,
+        phase: Math.random()<0.5?'H':'V',
+        phaseT: Math.random()*C.NORMAL_PHASE,
+        hQ:0, vQ:0,
+      });
+    }
+  }
+
+  // Directed edges
+  function addEdge(a,b,isH) {
+    const e={id:S.edges.length,from:a,to:b,isH,
+             cids:new Set(),density:0,blocked:false,blockT:0};
+    S.eidx[`${a}-${b}`]=e.id;
+    S.edges.push(e);
+  }
+  for (let r=0; r<C.ROWS; r++)
+    for (let c=0; c<C.COLS-1; c++) {
+      const a=r*C.COLS+c, b=r*C.COLS+c+1;
+      addEdge(a,b,true); addEdge(b,a,true);
+    }
+  for (let r=0; r<C.ROWS-1; r++)
+    for (let c=0; c<C.COLS; c++) {
+      const a=r*C.COLS+c, b=(r+1)*C.COLS+c;
+      addEdge(a,b,false); addEdge(b,a,false);
+    }
+
+  rebuildAdj();
+  for (let i=0; i<20; i++) spawnCar();
+  logEvent('system','🟢','SmartFlow AI 시스템 초기화 완료');
+}
+
+function rebuildAdj() {
+  S.adj={};
+  S.nodes.forEach(n=>S.adj[n.id]=[]);
+  S.edges.forEach(e=>{ if(!e.blocked) S.adj[e.from].push({to:e.to,eid:e.id}); });
+}
+
+function bfs(start, end) {
+  if (start===end) return null;
+  const vis=new Set([start]);
+  const q=[[start,[start]]];
+  while(q.length) {
+    const [cur,path]=q.shift();
+    for (const {to} of (S.adj[cur]||[])) {
+      if (to===end) return [...path,to];
+      if (!vis.has(to)) { vis.add(to); q.push([to,[...path,to]]); }
+    }
+  }
+  return null;
+}
+
+const CAR_COLORS=['#00e5ff','#7c3aed','#06b6d4','#60a5fa','#34d399','#a78bfa','#f472b6','#93c5fd'];
+
+function spawnCar(emergency=false, startN=null, endN=null) {
+  if (!emergency && S.cars.length>=C.MAX_CARS) return null;
+  const n=S.nodes.length;
+  let s=startN??Math.floor(Math.random()*n);
+  let e=endN??Math.floor(Math.random()*n);
+  let t=0;
+  while(e===s&&t++<15) e=Math.floor(Math.random()*n);
+  const route=bfs(s,e);
+  if (!route||route.length<2) return null;
+  const car={
+    id:S.nextId++, route, rIdx:0, prog:0,
+    spd:C.CAR_SPD*(emergency?1.7:(0.8+Math.random()*0.45)),
+    x:S.nodes[s].x, y:S.nodes[s].y, angle:0,
+    waiting:false, waitT:0,
+    color:emergency?'#ff1744':CAR_COLORS[Math.floor(Math.random()*CAR_COLORS.length)],
+    emergency, curEdge:-1, arrived:false,
+  };
+  S.cars.push(car);
+  return car;
+}
+
+// ---- CONTROLS ----
+function toggleAI() {
+  S.ai=!S.ai;
+  const btn=document.getElementById('aiBtn');
+  const badge=document.getElementById('modeBadge');
+  if (S.ai) {
+    btn.textContent='🤖 AI 모드 끄기'; btn.classList.add('on');
+    badge.className='mode-badge ai'; badge.textContent='🤖 AI 최적화 모드';
+    logEvent('ai','🤖','AI 교통 최적화 모드 활성화 — 신호 자동 조정 시작');
+  } else {
+    btn.textContent='🤖 AI 모드 켜기'; btn.classList.remove('on');
+    badge.className='mode-badge normal'; badge.textContent='⚙ 일반 모드';
+    logEvent('ai','⚙️','일반 고정 신호 모드로 전환');
+  }
+}
+
+function doAccident() {
+  const free=S.edges.filter(e=>!e.blocked&&e.cids.size>0);
+  if (!free.length) { logEvent('system','ℹ️','사고 발생 적합 구간 없음'); return; }
+  const edge=free[Math.floor(Math.random()*free.length)];
+  edge.blocked=true; edge.blockT=25;
+  const revId=S.eidx[`${edge.to}-${edge.from}`];
+  if (revId!==undefined) { S.edges[revId].blocked=true; S.edges[revId].blockT=25; }
+  rebuildAdj();
+  let cnt=0;
+  S.cars.forEach(car=>{
+    if (car.arrived) return;
+    for (let i=car.rIdx; i<car.route.length-1; i++) {
+      const k=`${car.route[i]}-${car.route[i+1]}`;
+      if (S.eidx[k]===edge.id||S.eidx[k]===revId) {
+        const newR=bfs(car.route[car.rIdx], car.route[car.route.length-1]);
+        if (newR) { car.route=newR; car.rIdx=0; car.prog=0; cnt++; }
+        break;
+      }
+    }
+  });
+  S.incidents++;
+  document.getElementById('sIncidents').textContent=S.incidents;
+  logEvent('accident','⚠️',`사고 발생! AI가 ${cnt}대 차량 우회 경로 즉시 안내`);
+}
+
+function doEmergency() {
+  if (S.emergencyCarId!==null) { logEvent('system','⚠️','이미 응급차 출동 중'); return; }
+  const startRow=Math.random()<0.5?0:C.ROWS-1;
+  const s=startRow*C.COLS+Math.floor(Math.random()*C.COLS);
+  const endRow=C.ROWS-1-startRow;
+  const e=endRow*C.COLS+Math.floor(Math.random()*C.COLS);
+  const car=spawnCar(true,s,e);
+  if (car) {
+    S.emergencyCarId=car.id;
+    clearPathSignals(car);
+    logEvent('emergency','🚑',`응급차 출동! 경로 신호 우선 제어 시작`);
+  }
+}
+
+function clearPathSignals(car) {
+  for (let i=car.rIdx; i<Math.min(car.rIdx+4,car.route.length-1); i++) {
+    const fn=S.nodes[car.route[i]], tn=S.nodes[car.route[i+1]];
+    const tgt=S.nodes[car.route[i+1]];
+    tgt.phase=fn.row===tn.row?'H':'V';
+    tgt.phaseT=0;
+  }
+}
+
+function doRush() {
+  S.rushMode=true; S.rushT=30;
+  for (let i=0; i<18; i++) spawnCar();
+  logEvent('rush','🚗','출퇴근 혼잡 시뮬레이션 시작 (30초)');
+}
+
+function doReset() {
+  document.getElementById('aiBtn').textContent='🤖 AI 모드 켜기';
+  document.getElementById('aiBtn').classList.remove('on');
+  document.getElementById('modeBadge').className='mode-badge normal';
+  document.getElementById('modeBadge').textContent='⚙ 일반 모드';
+  document.getElementById('logContainer').innerHTML='';
+  document.getElementById('evCards').innerHTML='<div style="font-size:0.65rem;color:var(--txt2);text-align:center;padding:8px 0;">이벤트 없음</div>';
+  initSim();
+}
+
+// ---- UPDATE ----
+function update(dt) {
+  S.t+=dt;
+  if (S.rushMode) { S.rushT-=dt; if(S.rushT<=0){S.rushMode=false;logEvent('rush','✅','혼잡 시뮬레이션 종료');} }
+
+  // Unblock accidents
+  S.edges.forEach(e=>{ if(e.blocked){e.blockT-=dt;if(e.blockT<=0){e.blocked=false;rebuildAdj();logEvent('accident','✅','사고 구간 복구 — 교통 정상화');}} });
+
+  // Update signals
+  S.nodes.forEach(node=>{
+    node.hQ=0; node.vQ=0;
+    S.edges.forEach(e=>{
+      if(e.to===node.id){ if(e.isH) node.hQ+=e.cids.size; else node.vQ+=e.cids.size; }
+    });
+    node.phaseT+=dt;
+    let dur;
+    if (S.ai) {
+      const cur=node.phase==='H'?node.hQ:node.vQ;
+      const oth=node.phase==='H'?node.vQ:node.hQ;
+      const ratio=(cur+1)/(cur+oth+2);
+      dur=C.AI_MIN+ratio*(C.AI_MAX-C.AI_MIN);
+    } else { dur=C.NORMAL_PHASE; }
+    if (node.phaseT>=dur) { node.phaseT=0; node.phase=node.phase==='H'?'V':'H'; }
+  });
+
+  // Spawn
+  S.spawnT+=dt;
+  const si=S.rushMode?0.4:C.SPAWN_INT;
+  if (S.spawnT>=si) { S.spawnT=0; spawnCar(); }
+
+  // Edge density
+  S.edges.forEach(e=>{ e.density=Math.min(1,e.cids.size/5); });
+
+  // Move cars
+  let waiting=0;
+  S.cars.forEach(car=>{
+    if (car.arrived) return;
+    if (car.rIdx>=car.route.length-1) {
+      car.arrived=true;
+      if (car.curEdge>=0) { S.edges[car.curEdge].cids.delete(car.id); car.curEdge=-1; }
+      if (car.emergency&&S.emergencyCarId===car.id) {
+        S.emergencyCarId=null;
+        logEvent('emergency','✅','응급차 목적지 도착 — 골든타임 확보');
+      }
+      return;
+    }
+
+    const fn=car.route[car.rIdx], tn=car.route[car.rIdx+1];
+    const eKey=`${fn}-${tn}`;
+    const eid=S.eidx[eKey];
+
+    // Register edge
+    if (eid!==undefined&&car.curEdge!==eid) {
+      if (car.curEdge>=0) S.edges[car.curEdge].cids.delete(car.id);
+      car.curEdge=eid; S.edges[eid].cids.add(car.id);
+    }
+
+    // Reroute if blocked
+    if (eid!==undefined&&S.edges[eid].blocked) {
+      const newR=bfs(fn,car.route[car.route.length-1]);
+      if (newR) {
+        if(car.curEdge>=0){S.edges[car.curEdge].cids.delete(car.id);}
+        car.route=newR; car.rIdx=0; car.prog=0; car.curEdge=-1;
+      }
+      return;
+    }
+
+    // Signal check
+    const toNode=S.nodes[tn];
+    const neededPhase=S.edges[eid]?.isH?'H':'V';
+    if (car.prog>=0.82&&!car.emergency&&toNode.phase!==neededPhase) {
+      car.waiting=true; car.waitT+=dt; waiting++;
+      if(S.ai) S.aiWait+=dt; else S.normalWait+=dt;
+      return;
+    }
+    car.waiting=false;
+
+    // Emergency signal clear ahead
+    if (car.emergency&&Math.floor(car.prog*10)===3) clearPathSignals(car);
+
+    car.prog+=car.spd*dt;
+    if (car.prog>=1) {
+      if(car.curEdge>=0){S.edges[car.curEdge].cids.delete(car.id);}
+      car.curEdge=-1; car.rIdx++; car.prog=0;
+    }
+
+    // Position & angle
+    const fromN=S.nodes[car.route[car.rIdx]];
+    const toN=S.nodes[car.route[Math.min(car.rIdx+1,car.route.length-1)]];
+    const t=car.prog;
+    car.x=fromN.x+(toN.x-fromN.x)*t;
+    car.y=fromN.y+(toN.y-fromN.y)*t;
+    car.angle=Math.atan2(toN.y-fromN.y,toN.x-fromN.x);
+  });
+
+  S.cars=S.cars.filter(c=>!c.arrived);
+  S.totalWaiting=waiting;
+
+  // History
+  S.histT+=dt;
+  if (S.histT>=1) { S.histT=0; S.history.push(S.cars.length); if(S.history.length>80)S.history.shift(); }
+
+  // CO2
+  if (S.ai) S.co2+=waiting*0.025*dt;
+
+  updateUI(waiting);
+}
+
+function updateUI(waiting) {
+  const eff=Math.max(0,Math.min(100,Math.round(100-(waiting/Math.max(S.cars.length,1))*100)));
+  document.getElementById('sEfficiency').textContent=eff+'%';
+  document.getElementById('sCars').textContent=S.cars.length;
+  document.getElementById('sWait').textContent=(waiting>0?(waiting*1.5).toFixed(1):'0.0');
+
+  let saving=0;
+  if (S.ai) {
+    if (S.normalWait>0) saving=Math.round(Math.max(0,(1-S.aiWait/(S.normalWait+0.001))*100));
+    else saving=Math.round(22+Math.sin(S.t*0.15)*6);
+  }
+  document.getElementById('sSaving').textContent=(S.ai?saving:0)+'%';
+
+  const co2=Math.round(S.co2);
+  document.getElementById('sCO2').textContent=co2+'g';
+  document.getElementById('co2bar').style.width=Math.min(100,co2/8)+'%';
+
+  const mins=Math.floor(S.t/60), secs=Math.floor(S.t%60);
+  document.getElementById('simClock').textContent=`${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+
+  // Zone density
+  for (let r=0; r<C.ROWS; r++) {
+    let d=0;
+    S.edges.forEach(e=>{ if(S.nodes[e.from].row===r)d+=e.density; });
+    const pct=Math.min(100,Math.round(d/(C.COLS-1)*100));
+    document.getElementById(`z${r}pct`).textContent=pct+'%';
+    const bar=document.getElementById(`z${r}bar`);
+    bar.style.width=pct+'%';
+    bar.className='prog-fill '+(pct<40?'pf-cyan':pct<70?'pf-amber':'pf-red');
+  }
+}
+
+function logEvent(type, icon, text) {
+  const m=Math.floor(S.t/60), s2=Math.floor(S.t%60);
+  const ts=`${String(m).padStart(2,'0')}:${String(s2).padStart(2,'0')}`;
+  S.events.unshift({type,icon,text,ts});
+  if(S.events.length>20) S.events.pop();
+  renderLog(); renderEvCards();
+}
+function renderLog() {
+  document.getElementById('logContainer').innerHTML=
+    S.events.slice(0,6).map(e=>`
+      <div class="log-item">
+        <span class="log-time">${e.ts}</span>
+        <span class="log-icon">${e.icon}</span>
+        <span>${e.text}</span>
+      </div>`).join('');
+}
+function renderEvCards() {
+  const cols={accident:'#ffab00',emergency:'#ff1744',ai:'#00e5ff',rush:'#8b5cf6',system:'#00e676'};
+  const items=S.events.slice(0,3);
+  document.getElementById('evCards').innerHTML=items.length?
+    items.map(e=>`<div class="ev-card" style="border-color:${cols[e.type]||'#444'};color:${cols[e.type]||'#888'};">${e.icon} ${e.text}</div>`).join(''):
+    '<div style="font-size:0.65rem;color:var(--txt2);text-align:center;padding:8px 0;">이벤트 없음</div>';
+}
+
+// ---- DRAW ----
+function draw() {
+  const cv=document.getElementById('cityCanvas');
+  const ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,C.CW,C.CH);
+  drawBg(ctx);
+  drawBuildings(ctx);
+  drawRoads(ctx);
+  drawSignals(ctx);
+  drawCars(ctx);
+  drawAccidents(ctx);
+  drawOverlay(ctx);
+}
+
+function drawBg(ctx) {
+  ctx.fillStyle='#060c18';
+  ctx.fillRect(0,0,C.CW,C.CH);
+  ctx.strokeStyle='rgba(255,255,255,0.018)';
+  ctx.lineWidth=0.5;
+  for(let x=0;x<C.CW;x+=18){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,C.CH);ctx.stroke();}
+  for(let y=0;y<C.CH;y+=18){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(C.CW,y);ctx.stroke();}
+}
+
+function drawBuildings(ctx) {
+  BUILDINGS.forEach(block=>{
+    ctx.fillStyle='rgba(10,20,38,0.95)';
+    ctx.fillRect(block.blkX,block.blkY,block.blkW,block.blkH);
+    block.buildings.forEach(b=>{
+      ctx.fillStyle='rgba(8,16,30,0.98)';
+      ctx.fillRect(b.bx,b.by,b.bw,b.bh);
+      ctx.fillStyle='rgba(0,229,255,0.10)';
+      b.windows.forEach(w=>ctx.fillRect(w.wx,w.wy,4,5));
+    });
+  });
+}
+
+function edgeColor(d) {
+  if(d<0.35) return `rgb(${Math.round(d/0.35*60)},${Math.round(190-d/0.35*40)},90)`;
+  if(d<0.65) { const t=(d-0.35)/0.3; return `rgb(${Math.round(60+t*195)},${Math.round(150+t*50)},40)`; }
+  const t=(d-0.65)/0.35; return `rgb(255,${Math.round(200-t*185)},25)`;
+}
+
+function drawRoads(ctx) {
+  const drawn=new Set();
+  S.edges.forEach(edge=>{
+    const k=Math.min(edge.from,edge.to)+'_'+Math.max(edge.from,edge.to);
+    if(drawn.has(k)) return; drawn.add(k);
+    const fn=S.nodes[edge.from],tn=S.nodes[edge.to];
+    const fwdId=S.eidx[`${edge.from}-${edge.to}`];
+    const bwdId=S.eidx[`${edge.to}-${edge.from}`];
+    const d=Math.max(
+      fwdId!==undefined?S.edges[fwdId].density:0,
+      bwdId!==undefined?S.edges[bwdId].density:0
+    );
+    const blocked=(fwdId!==undefined&&S.edges[fwdId].blocked)||(bwdId!==undefined&&S.edges[bwdId].blocked);
+
+    // Road base
+    ctx.strokeStyle='#182436'; ctx.lineWidth=C.ROAD_W+6; ctx.lineCap='square';
+    ctx.beginPath(); ctx.moveTo(fn.x,fn.y); ctx.lineTo(tn.x,tn.y); ctx.stroke();
+
+    // Road surface
+    ctx.strokeStyle=blocked?'rgba(255,23,68,0.55)':edgeColor(d);
+    ctx.lineWidth=C.ROAD_W;
+    ctx.beginPath(); ctx.moveTo(fn.x,fn.y); ctx.lineTo(tn.x,tn.y); ctx.stroke();
+
+    // Center dashes
+    ctx.strokeStyle='rgba(255,255,255,0.1)'; ctx.lineWidth=1;
+    ctx.setLineDash([7,7]);
+    ctx.beginPath(); ctx.moveTo(fn.x,fn.y); ctx.lineTo(tn.x,tn.y); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+}
+
+function drawSignals(ctx) {
+  S.nodes.forEach(node=>{
+    const {x,y,phase}=node;
+    // Intersection pad
+    ctx.fillStyle='#1a2c42';
+    ctx.fillRect(x-12,y-12,24,24);
+
+    const r=3.5, off=14;
+    const dirs=[
+      {px:x,py:y-off,green:phase==='V'},
+      {px:x,py:y+off,green:phase==='V'},
+      {px:x-off,py:y, green:phase==='H'},
+      {px:x+off,py:y, green:phase==='H'},
+    ];
+    dirs.forEach(({px,py,green})=>{
+      ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2);
+      ctx.fillStyle=green?'#00ff88':'#ff2255';
+      if(green){ctx.shadowColor='#00ff88';ctx.shadowBlur=8;}
+      ctx.fill(); ctx.shadowBlur=0;
+    });
+
+    if (S.ai) {
+      ctx.font='7px Outfit'; ctx.fillStyle='rgba(0,229,255,0.7)';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('AI',x,y+1);
+    }
+  });
+}
+
+function drawCars(ctx) {
+  S.cars.forEach(car=>{
+    ctx.save();
+    // Lane offset
+    const ang=((car.angle%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+    const lx=car.x+Math.sin(ang)*4;
+    const ly=car.y+Math.cos(ang)*4;
+    ctx.translate(lx,ly);
+    ctx.rotate(car.angle);
+
+    if (car.emergency) {
+      const g=0.5+0.5*Math.sin(S.t*9);
+      ctx.shadowColor='#ff1744'; ctx.shadowBlur=12+g*12;
+      ctx.fillStyle='#ff3333'; ctx.fillRect(-8,-4,16,8);
+      ctx.fillStyle='#ffffff'; ctx.fillRect(-5,-2.5,10,5);
+      ctx.fillStyle=g>0.5?'#ff0000':'#0033ff'; ctx.fillRect(-6,-4.5,5,3);
+      ctx.fillStyle=g>0.5?'#0033ff':'#ff0000'; ctx.fillRect(1,-4.5,5,3);
+    } else {
+      ctx.globalAlpha=car.waiting?0.55:0.9;
+      ctx.fillStyle=car.color;
+      ctx.shadowColor=car.color; ctx.shadowBlur=5;
+      ctx.fillRect(-5.5,-3,11,6);
+      ctx.fillStyle='rgba(255,255,255,0.28)';
+      ctx.fillRect(-2,-2,5,4);
+    }
+    ctx.shadowBlur=0; ctx.globalAlpha=1;
+    ctx.restore();
+  });
+}
+
+function drawAccidents(ctx) {
+  S.edges.forEach(edge=>{
+    if(!edge.blocked) return;
+    const fn=S.nodes[edge.from],tn=S.nodes[edge.to];
+    const mx=(fn.x+tn.x)/2, my=(fn.y+tn.y)/2;
+    const p=0.6+0.4*Math.sin(S.t*5);
+    ctx.save(); ctx.globalAlpha=p;
+    ctx.shadowColor='#ffab00'; ctx.shadowBlur=20;
+    ctx.font='bold 20px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#ffab00'; ctx.fillText('⚠',mx,my);
+    ctx.shadowBlur=0; ctx.restore();
+  });
+}
+
+function drawOverlay(ctx) {
+  if (S.ai) {
+    ctx.save();
+    ctx.font='bold 9px JetBrains Mono';
+    ctx.fillStyle='rgba(0,229,255,0.4)';
+    ctx.textAlign='right'; ctx.textBaseline='bottom';
+    ctx.fillText('AI SIGNAL OPTIMIZATION ACTIVE',C.CW-8,C.CH-8);
+    ctx.restore();
+  }
+}
+
+// ---- CHARTS ----
+function drawCharts() {
+  drawFlowChart();
+  drawSignalChart();
+  drawPredChart();
+}
+
+function drawFlowChart() {
+  const cv=document.getElementById('flowChart');
+  const W=cv.parentElement.clientWidth-22||220;
+  const H=110; cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#060c18'; ctx.fillRect(0,0,W,H);
+
+  const PL=28,PR=6,PT=5,PB=18;
+  const cw=W-PL-PR, ch=H-PT-PB;
+
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=0.5;
+  for(let i=0;i<=4;i++){
+    const y=PT+ch-i*ch/4;
+    ctx.beginPath(); ctx.moveTo(PL,y); ctx.lineTo(PL+cw,y); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.font='7px JetBrains Mono';
+    ctx.textAlign='right'; ctx.fillText(Math.round(C.MAX_CARS*i/4),PL-2,y+3);
+  }
+
+  const data=S.history.slice(-60);
+  if(data.length<2) return;
+  const dx=cw/(data.length-1);
+
+  const grad=ctx.createLinearGradient(0,PT,0,PT+ch);
+  grad.addColorStop(0,'rgba(0,229,255,0.45)'); grad.addColorStop(1,'rgba(0,229,255,0.02)');
+
+  ctx.beginPath();
+  ctx.moveTo(PL,PT+ch);
+  data.forEach((v,i)=>ctx.lineTo(PL+i*dx,PT+ch-(v/C.MAX_CARS)*ch));
+  ctx.lineTo(PL+(data.length-1)*dx,PT+ch);
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+
+  ctx.beginPath();
+  data.forEach((v,i)=>{ const x=PL+i*dx,y=PT+ch-(v/C.MAX_CARS)*ch; i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.strokeStyle='#00e5ff'; ctx.lineWidth=1.5; ctx.stroke();
+
+  ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.font='7px Outfit'; ctx.textAlign='left';
+  ctx.fillText('←60초 전',PL,H-4); ctx.textAlign='right'; ctx.fillText('현재→',W-PR,H-4);
+}
+
+function drawSignalChart() {
+  const cv=document.getElementById('signalChart');
+  const W=cv.parentElement.clientWidth-22||220;
+  const H=95; cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#060c18'; ctx.fillRect(0,0,W,H);
+
+  let hc=0,vc=0;
+  S.nodes.forEach(n=>{ if(n.phase==='H')hc++; else vc++; });
+  const tot=S.nodes.length;
+  const cx=H/2,cy=H/2,R=H/2-8,r=H/2-20;
+
+  ctx.beginPath();
+  ctx.arc(cx,cy,R,-Math.PI/2,-Math.PI/2+(hc/tot)*2*Math.PI);
+  ctx.arc(cx,cy,r,-Math.PI/2+(hc/tot)*2*Math.PI,-Math.PI/2,true);
+  ctx.fillStyle='#00e5ff'; ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(cx,cy,R,-Math.PI/2+(hc/tot)*2*Math.PI,Math.PI*3/2);
+  ctx.arc(cx,cy,r,Math.PI*3/2,-Math.PI/2+(hc/tot)*2*Math.PI,true);
+  ctx.fillStyle='#8b5cf6'; ctx.fill();
+
+  ctx.fillStyle='#e2e8f0'; ctx.font='bold 11px Outfit';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(tot,cx,cy-4); ctx.font='7px Outfit';
+  ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.fillText('교차로',cx,cy+8);
+
+  const lx=H+8;
+  [{color:'#00e5ff',label:'수평(동서)',cnt:hc},{color:'#8b5cf6',label:'수직(남북)',cnt:vc}].forEach((item,i)=>{
+    const ly=18+i*32;
+    ctx.fillStyle=item.color; ctx.fillRect(lx,ly,9,9);
+    ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='8px Outfit';
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(item.label,lx+13,ly+4);
+    ctx.font='bold 11px JetBrains Mono'; ctx.fillStyle=item.color;
+    ctx.fillText(item.cnt,lx+13,ly+16);
+  });
+}
+
+function drawPredChart() {
+  const cv=document.getElementById('predChart');
+  const W=cv.parentElement.clientWidth-22||220;
+  const H=95; cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#060c18'; ctx.fillRect(0,0,W,H);
+
+  const hours=['6시','7시','8시','9시','10시','11시','12시'];
+  const vals= [35,78,96,82,55,40,62];
+  const barW=(W-20)/hours.length-3;
+  const maxH=H-25;
+
+  hours.forEach((h,i)=>{
+    const x=10+i*((W-20)/hours.length);
+    const bh=(vals[i]/100)*maxH;
+    const y=H-20-bh;
+    const isCur=(i===2); // 8시 = peak
+    ctx.fillStyle=isCur?'#ffab00':(S.ai?'rgba(0,229,255,0.55)':'rgba(59,130,246,0.55)');
+    if(isCur){ctx.shadowColor='#ffab00';ctx.shadowBlur=10;}
+    ctx.fillRect(x,y,barW,bh);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(255,255,255,0.45)'; ctx.font='7px Outfit';
+    ctx.textAlign='center';
+    ctx.fillText(h,x+barW/2,H-4);
+    ctx.fillText(vals[i]+'%',x+barW/2,y-3);
+  });
+  ctx.fillStyle='rgba(255,171,0,0.7)'; ctx.font='7px Outfit';
+  ctx.textAlign='right'; ctx.fillText('▲현재(8시)',W-3,H-4);
+}
+
+// ---- MAIN LOOP ----
+function loop(ts) {
+  if (!S.lastFrame) S.lastFrame=ts;
+  const dt=Math.min((ts-S.lastFrame)/1000,0.1);
+  S.lastFrame=ts;
+  update(dt);
+  draw();
+  drawCharts();
+  requestAnimationFrame(loop);
+}
+
+// ---- INIT ----
+window.addEventListener('DOMContentLoaded',()=>{
+  const cv=document.getElementById('cityCanvas');
+  cv.width=C.CW; cv.height=C.CH;
+  initSim();
+  requestAnimationFrame(loop);
+  // Resize charts on load
+  setTimeout(drawCharts,100);
+});
+</script>
+</body>
+</html>
